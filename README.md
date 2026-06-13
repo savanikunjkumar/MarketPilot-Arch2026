@@ -38,7 +38,7 @@
 - [Usage Examples](#-usage-examples)
 - [API Reference](#-api-reference)
 - [RAG Pipeline — Deep Dive](#-rag-pipeline--deep-dive)
-- [AWS Deployment](#-aws-deployment)
+- [AWS Deployment](#%EF%B8%8F-aws-deployment)
 - [Cost Estimates & Optimization](#-cost-estimates--optimization)
 - [Monitoring & Observability](#-monitoring--observability)
 - [Security Best Practices](#-security-best-practices)
@@ -109,120 +109,153 @@ MarketPilot follows a **layered, service-oriented architecture** separating pres
 
 ### High-Level System Architecture
 
-```mermaid
-flowchart TB
-    subgraph UI["🖥️ Presentation Layer"]
-        A["Streamlit Frontend<br/>Chat • Dashboard • Charts"]
-    end
-
-    subgraph API["⚙️ FastAPI Backend"]
-        B["API Routes<br/>/chat /analyze /predict /compare"]
-        C["Agent Orchestrator<br/>(Google ADK)"]
-        D["RAG Pipeline<br/>(ChromaDB Vector Store)"]
-    end
-
-    subgraph AGENTS["🤖 Multi-Agent Layer"]
-        E["Research Agent<br/>Data Gathering"]
-        F["Analysis Agent<br/>Technical & Fundamental"]
-        G["Sentiment Agent<br/>News Sentiment"]
-        H["Prediction Agent<br/>ML Forecasting"]
-        I["Report Agent<br/>Insight Synthesis"]
-    end
-
-    subgraph EXT["🌐 External Data Sources"]
-        J["Yahoo Finance"]
-        K["Alpha Vantage"]
-        L["NewsAPI"]
-        M["Google Gemini (LLM)"]
-    end
-
-    A --> B --> C
-    C --> D
-    C --> E & F & G
-    E & F & G --> H --> I
-    I --> B --> A
-
-    E --> J
-    E --> K
-    G --> L
-    C --> M
-    D --> M
-
-    style UI fill:#1f2937,color:#fff
-    style API fill:#111827,color:#fff
-    style AGENTS fill:#1e3a5f,color:#fff
-    style EXT fill:#374151,color:#fff
+```
+┌─────────────────────────────────────────────────────────┐
+│         🖥️  PRESENTATION LAYER                         │
+│                                                         │
+│        Streamlit Frontend                              │
+│   (Chat • Dashboard • Interactive Charts)              │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│         ⚙️  API & ORCHESTRATION LAYER                  │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │ FastAPI Routes (/chat, /analyze, /predict)     │   │
+│  └──────────────┬──────────────────────────────────┘   │
+│                 │                                       │
+│  ┌──────────────▼──────────────────────────────────┐   │
+│  │ Agent Orchestrator (Google ADK)                │   │
+│  │ - Intent Classification                        │   │
+│  │ - Agent Sequencing                             │   │
+│  │ - Context Management                           │   │
+│  └──────────────┬──────────────────────────────────┘   │
+│                 │                                       │
+│  ┌──────────────▼──────────────────────────────────┐   │
+│  │ RAG Pipeline (ChromaDB Vector Store)           │   │
+│  │ - Document Retrieval                           │   │
+│  │ - Context Injection                            │   │
+│  └──────────────┬──────────────────────────────────┘   │
+└────────────────┼──────────────────────────────────────┘
+                 │
+┌────────────────▼──────────────────────────────────────┐
+│        🤖  MULTI-AGENT INTELLIGENCE LAYER             │
+│                                                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌────────────┐   │
+│  │  Research   │  │  Analysis   │  │ Sentiment  │   │
+│  │   Agent     │→ │   Agent     │→ │   Agent    │   │
+│  │             │  │             │  │            │   │
+│  │ Data        │  │ Technical & │  │ News       │   │
+│  │ Gathering   │  │ Fundamental │  │ Sentiment  │   │
+│  └─────────────┘  └─────────────┘  └────────────┘   │
+│         │              │                  │           │
+│         └──────────────┬──────────────────┘           │
+│                        │                              │
+│         ┌──────────────▼──────────────┐              │
+│         │   Prediction Agent          │              │
+│         │ (ML Forecast Model)         │              │
+│         └──────────────┬───────────────┘             │
+│                        │                              │
+│         ┌──────────────▼──────────────┐              │
+│         │    Report Agent             │              │
+│         │ (Insight Synthesis)         │              │
+│         └──────────────┬───────────────┘             │
+└────────────────────────┼──────────────────────────────┘
+                         │
+┌────────────────────────▼──────────────────────────────┐
+│      🌐  EXTERNAL DATA SOURCES & LLM                  │
+│                                                       │
+│  • Yahoo Finance (OHLCV Data)                        │
+│  • Alpha Vantage (Fundamentals & Fallback)           │
+│  • NewsAPI (Financial Headlines)                     │
+│  • Google Gemini (LLM Reasoning)                     │
+└───────────────────────────────────────────────────────┘
 ```
 
-### Request Lifecycle (Sequence Diagram)
+### Request Lifecycle (Text Flow)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant FE as Streamlit Frontend
-    participant API as FastAPI Backend
-    participant ORC as Agent Orchestrator
-    participant RAG as RAG (ChromaDB)
-    participant AG as Specialist Agents
-    participant LLM as Google Gemini
-
-    User->>FE: "Analyze Tesla vs Ford"
-    FE->>API: POST /api/chat
-    API->>ORC: Route request
-    ORC->>RAG: Retrieve grounding context
-    RAG-->>ORC: Relevant documents/embeddings
-    ORC->>AG: Dispatch to Research, Analysis, Sentiment
-    AG->>LLM: Reasoning + tool calls
-    LLM-->>AG: Structured insights
-    AG-->>ORC: Aggregated agent outputs
-    ORC->>AG: Trigger Prediction Agent
-    AG-->>ORC: Forecast results
-    ORC->>AG: Trigger Report Agent
-    AG-->>ORC: Final synthesized report
-    ORC-->>API: Response payload
-    API-->>FE: JSON response
-    FE-->>User: Rendered insights + charts
+```
+USER REQUEST: "Analyze Tesla vs Ford"
+     ↓
+[STREAMLIT FRONTEND]
+     ↓ HTTP POST /api/chat
+[FASTAPI ROUTES]
+     • Validate request
+     • Extract intent & ticker
+     ↓
+[AGENT ORCHESTRATOR]
+     • Classify intent
+     • Load RAG context
+     ↓
+[DATA INGESTION]
+     • Fetch OHLCV from Yahoo Finance
+     • Fetch Fundamentals from Alpha Vantage
+     • Fetch News from NewsAPI
+     ↓
+[DATA PROCESSORS]
+     • Validate & normalize data
+     • Calculate technical indicators (RSI, MACD, Bollinger)
+     ↓
+[SPECIALIST AGENTS] (Sequential)
+     1. Research Agent → Market data + fundamentals
+     2. Analysis Agent → Technical indicators analysis
+     3. Sentiment Agent → News sentiment scoring
+     4. Prediction Agent → ML-based forecast
+     5. Report Agent → Synthesize all outputs
+     ↓ Each agent sends output to Google Gemini for reasoning
+[GOOGLE GEMINI]
+     • Process agent outputs
+     • Generate natural language insights
+     ↓
+[RESPONSE COMPOSITION]
+     • Build JSON response
+     • Include agent trace (transparency)
+     • Add source citations
+     ↓ HTTP 200 JSON
+[STREAMLIT FRONTEND]
+     • Render insights
+     • Display charts
+     • Show agent reasoning steps
+     ↓
+USER SEES: Multi-step analysis with transparent reasoning
 ```
 
-### Data Flow — From Raw Market Data to Insight
+### Data Pipeline: From Raw Data to Intelligence
 
-```mermaid
-flowchart LR
-    subgraph Sources
-        YF[("Yahoo Finance<br/>OHLCV Data")]
-        AV[("Alpha Vantage<br/>Fundamentals")]
-        NA[("NewsAPI<br/>Headlines")]
-    end
+```
+EXTERNAL APIS          INGESTION         PROCESSING       INTELLIGENCE      OUTPUT
+─────────────         ───────────        ──────────        ────────────      ──────
 
-    subgraph Ingestion["Data Ingestion Layer"]
-        ING["ingestion.py"]
-        PROC["processors.py<br/>Cleaning & Feature Engineering"]
-    end
+Yahoo Finance    ┐
+                 ├─→ ingestion.py ┐
+Alpha Vantage    │                │
+                 │                ├─→ processors.py ┐
+NewsAPI          │                │                  │
+                 │                │                  │
+                 ↓                ↓                  ↓
+           • Fetch raw         • Validate        • Normalize
+           • Parse response    • Clean data      • Feature Eng
+           • Handle errors     • Handle missing  • Create OHLCV
+                                                 • Extract features
 
-    subgraph Intelligence["Intelligence Layer"]
-        TECH["technical.py<br/>RSI / MACD / Bollinger"]
-        SENT["sentiment.py<br/>LLM Sentiment Scoring"]
-        PRED["predictions.py<br/>ML Forecast Model"]
-    end
-
-    subgraph Synthesis
-        ORC["Agent Orchestrator"]
-        REP["Report Agent"]
-    end
-
-    OUT[["📄 Final Insight Report<br/>(JSON / Chat / Dashboard)"]]
-
-    YF --> ING
-    AV --> ING
-    NA --> ING
-    ING --> PROC
-    PROC --> TECH
-    PROC --> SENT
-    PROC --> PRED
-    TECH --> ORC
-    SENT --> ORC
-    PRED --> ORC
-    ORC --> REP --> OUT
+                                                 ↓
+                                        technical.py ──┐
+                                        sentiment.py ──┤
+                                        predictions.py─┤
+                                                       │
+                                                       ↓
+                                            [ORCHESTRATOR]
+                                                 │
+                                                 ↓
+                                        [GOOGLE GEMINI]
+                                                 │
+                                                 ↓
+                                        📄 JSON RESPONSE
+                                        ├─ Analysis
+                                        ├─ Risk Level
+                                        ├─ Recommendations
+                                        ├─ Agent Trace
+                                        └─ Sources
 ```
 
 ### Component Responsibilities
@@ -713,16 +746,55 @@ MarketPilot grounds every LLM response in retrieved context to minimize hallucin
 
 ### Pipeline Stages
 
-```mermaid
-flowchart LR
-    A["📄 Raw Documents<br/>(news, filings, reports)"] --> B["✂️ Chunking<br/>512 tokens, 64 overlap"]
-    B --> C["🧬 Embedding<br/>embeddings.py"]
-    C --> D[("🗄️ ChromaDB<br/>vector_db/")]
-    E["❓ User Query"] --> F["🧬 Query Embedding"]
-    F --> G["🔍 Top-K Retrieval<br/>(k=5)"]
-    D --> G
-    G --> H["📝 Context Injection<br/>into Gemini Prompt"]
-    H --> I["🤖 Grounded Agent Response"]
+```
+DOCUMENT INGESTION PHASE
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+📄 Raw Documents (News, Filings, Reports)
+     ↓
+[✂️ CHUNKING]
+     • Split into 512-token chunks
+     • 64-token overlap for context continuity
+     ↓
+[🧬 EMBEDDING]
+     • Convert chunks to vectors
+     • Use embeddings.py (Google Gemini embeddings)
+     ↓
+[🗄️ STORAGE]
+     • Persist vectors in ChromaDB
+     • Store at: data/vector_db/
+     • Indexed for fast retrieval
+
+
+QUERY RESPONSE PHASE
+━━━━━━━━━━━━━━━━━━━
+
+❓ User Query: "Analyze TSLA stock"
+     ↓
+[🧬 QUERY EMBEDDING]
+     • Convert query to vector
+     ↓
+[🔍 SIMILARITY SEARCH]
+     • Find top-5 most similar documents
+     • Via ChromaDB retrieval
+     ↓
+[📝 CONTEXT RETRIEVAL]
+     Retrieved context:
+     • Recent TSLA news headlines
+     • Historical fundamentals
+     • Previous analysis notes
+     ↓
+[🤖 CONTEXT INJECTION]
+     • Inject retrieved context into Gemini prompt
+     • Agent reasoning now grounded in real data
+     ↓
+[💬 GROUNDED RESPONSE]
+     Agent responds with:
+     • Facts tied to retrieved documents
+     • Source citations
+     • Confidence levels
+     ↓
+📊 USER SEES: Explainable, fact-grounded analysis
 ```
 
 ### Stage Breakdown
@@ -1313,3 +1385,4 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 *MarketPilot — From Data to Confident Decision*
 
 </div>
+
