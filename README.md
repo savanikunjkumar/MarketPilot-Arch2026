@@ -75,15 +75,12 @@ The result is a conversational financial analyst that can answer questions like 
 
 ---
 
-## 🎥 Demo Video
+## 🎥 Demo 
 
 > 📺 **Live Demo / Walkthrough:** _[ADD YOUR DEMO VIDEO LINK HERE]_
 
-> 🌐 **Live Deployment (AWS ECS):** _[ADD YOUR LIVE DEMO URL HERE]_
 
-> 🖼️ **Screenshots / GIFs:** _[ADD PRODUCT SCREENSHOTS HERE]_
-
-> 📊 **Sample Report Output (PDF/Image):** _[ADD SAMPLE OUTPUT LINK HERE]_
+> 📊 **Sample Report Output (PDF/Image):** _https://drive.google.com/file/d/1bKGOsfPe58rum_N8oDXtlMx0ZvHUjc40/view?usp=sharing_
 
 ---
 
