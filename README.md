@@ -371,7 +371,9 @@ When `include_sources: true`, the API returns intermediate agent steps so the UI
   ]
 }
 ```
+## 📊 Example Report 
 
+![Technology Stack](Report/Copilot_20260620_141946.png)
 ---
 
 ## 🧰 Tech Stack
