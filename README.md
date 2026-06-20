@@ -77,7 +77,7 @@ The result is a conversational financial analyst that can answer questions like 
 
 ## 🎥 Demo 
 
-> 📺 **Live Demo / Walkthrough:** _[ADD YOUR DEMO VIDEO LINK HERE]_
+> 📺 **Live Demo / Walkthrough:** _https://drive.google.com/file/d/1lcqPSEONx3FRH2R-qDJOihF91myCsA6z/view?usp=sharing_
 
 
 > 📊 **Sample Report Output (PDF/Image):** _https://drive.google.com/file/d/1bKGOsfPe58rum_N8oDXtlMx0ZvHUjc40/view?usp=sharing_
