@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚀 MarketPilot
+#  MarketPilot
 
 ### *From Data to Confident Decision*
 
